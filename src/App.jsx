@@ -23,7 +23,7 @@ export default function App() {
         setFontBuffer={setFontBuffer}
       />
 
-      <Canvas camera={{ position: [0, 1, 1], fov: 10 }} shadows>
+      <Canvas camera={{ position: [0, 0, 100], fov: 10 }} shadows>
         <SceneEnvController />
         <ToneMappingController />
         <color attach="background" args={["#000000"]} />
