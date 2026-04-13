@@ -7,26 +7,25 @@ import fontFile from "../assets/Onest[wght].ttf";
 export default function TextCadPanel({ text, setText, setFontBuffer }) {
   const [font, setFont] = useState(null);
 
-  // ✅ Load font once
+  // ✅ LOAD FONT (used by decal + CAD export)
   useEffect(() => {
     fetch(fontFile)
       .then((res) => res.arrayBuffer())
       .then((buffer) => {
-        setFontBuffer(buffer); // send to parent (for decal)
+        setFontBuffer(buffer); // send to parent for decal rendering
         const parsed = opentype.parse(buffer);
-        setFont(parsed); // local usage
+        setFont(parsed);
       })
       .catch(console.error);
   }, [setFontBuffer]);
 
-  // ✅ Build Maker.js model (NO hook issues anymore)
+  // ✅ CREATE MAKER MODEL FROM OPENTYPE PATH (gives filled text)
   const model = useMemo(() => {
     if (!font || !text) return null;
 
     try {
       const path = font.getPath(text, 0, 0, 50);
       const svgPath = path.toPathData(2);
-
       return makerjs.importer.fromSVGPathData(svgPath);
     } catch (err) {
       console.error("Model error:", err);
@@ -34,11 +33,26 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     }
   }, [text, font]);
 
-  // ✅ Move to bottom-left for CAD export
-  const moveToBottomLeft = (model) => {
+  // ⭐ Move model to positive quadrant + padding
+  const moveToBottomLeft = (model, padding = 5) => {
     const m = makerjs.measure.modelExtents(model);
     if (!m) return;
-    makerjs.model.move(model, [-m.low[0], -m.low[1]]);
+    makerjs.model.move(model, [-m.low[0] + padding, -m.low[1] + padding]);
+  };
+
+  // ⭐ MAKE TEXT BOLD USING OFFSET (no font download needed)
+  const makeBold = (model, amount = 1.2) => {
+    try {
+      const expanded = makerjs.model.outline(model, amount, 0, true);
+      return {
+        models: {
+          original: model,
+          bold: expanded,
+        },
+      };
+    } catch {
+      return model;
+    }
   };
 
   const getFileName = (ext) => {
@@ -46,23 +60,50 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     return `${safeText}.${ext}`;
   };
 
+  // ⭐ DXF EXPORT (bold + padded)
   const exportDXF = () => {
     if (!model) return;
 
-    const cloned = makerjs.cloneObject(model);
-    moveToBottomLeft(cloned);
+    const PADDING = 5;
+
+    let cloned = makerjs.cloneObject(model);
+    cloned = makeBold(cloned, 1.2);
+    moveToBottomLeft(cloned, PADDING);
 
     const dxf = makerjs.exporter.toDXF(cloned);
     downloadTextFile(dxf, getFileName("dxf"), "application/dxf");
   };
 
+  // ⭐ SVG EXPORT (bold + no clipping + engraving safe)
   const exportSVG = () => {
     if (!model) return;
 
-    const cloned = makerjs.cloneObject(model);
-    moveToBottomLeft(cloned);
+    const PADDING = 5;
 
-    const svg = makerjs.exporter.toSVG(cloned);
+    let cloned = makerjs.cloneObject(model);
+    cloned = makeBold(cloned, 1.2);
+
+    const m = makerjs.measure.modelExtents(cloned);
+    if (!m) return;
+
+    const width = m.high[0] - m.low[0];
+    const height = m.high[1] - m.low[1];
+
+    moveToBottomLeft(cloned, PADDING);
+
+    const viewWidth = width + PADDING * 2;
+    const viewHeight = height + PADDING * 2;
+
+    const svg = makerjs.exporter.toSVG(cloned, {
+      useSvgPathOnly: true,
+      strokeWidth: 0.1,
+      svgAttrs: {
+        viewBox: `0 0 ${viewWidth} ${viewHeight}`,
+        width: `${viewWidth}mm`,
+        height: `${viewHeight}mm`,
+      },
+    });
+
     downloadTextFile(svg, getFileName("svg"), "image/svg+xml");
   };
 
@@ -85,14 +126,12 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
         zIndex: 10,
       }}
     >
-      {/* HEADER */}
       <div style={{ borderBottom: "1px solid #1e293b", paddingBottom: 10 }}>
         <h2 style={{ margin: 0, fontSize: 18, color: "#e2e8f0" }}>
           Text Engraving
         </h2>
       </div>
 
-      {/* INPUT */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <label style={{ fontSize: 13, color: "#94a3b8" }}>
           Engraving Text (max 15 chars)
@@ -112,7 +151,6 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
         />
       </div>
 
-      {/* EXPORT */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button
           onClick={exportSVG}
@@ -123,7 +161,6 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
             border: "none",
             background: isReady ? "#2563eb" : "#334155",
             color: "white",
-            cursor: isReady ? "pointer" : "not-allowed",
           }}
         >
           Export SVG
@@ -138,7 +175,6 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
             border: "none",
             background: isReady ? "#16a34a" : "#334155",
             color: "white",
-            cursor: isReady ? "pointer" : "not-allowed",
           }}
         >
           Export DXF

@@ -7,8 +7,9 @@ export default function CameraControls() {
       makeDefault
       maxPolarAngle={Math.PI / 2}
       minPolarAngle={Math.PI / 3}
-      minDistance={50}
+      minDistance={75}
       maxDistance={150}
+      truckSpeed={0}
     />
   );
 }

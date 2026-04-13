@@ -1,5 +1,5 @@
 import { Suspense, useMemo } from "react";
-import { useGLTF, Decal } from "@react-three/drei";
+import { useGLTF, Decal, Center } from "@react-three/drei";
 import * as THREE from "three";
 import * as makerjs from "makerjs";
 import opentype from "opentype.js";
@@ -60,9 +60,10 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
     if (!meshData) return { position: [0, 0, 0], scale: [1, 1, 1] };
 
     const tempMesh = new THREE.Mesh(meshData.geometry);
-    tempMesh.position.copy(meshData.position);
     tempMesh.rotation.copy(meshData.rotation);
     tempMesh.scale.copy(meshData.scale);
+    // 🎯 We center the geometry locally first
+    tempMesh.position.set(0, 0, 0);
 
     const box = new THREE.Box3().setFromObject(tempMesh);
     const size = new THREE.Vector3();
@@ -90,7 +91,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
     const shrinkFactor = 0.35; // 40% of current (i.e. 60% smaller)
 
     return {
-      position: [center.x, center.y - 1, box.max.z + 0.01],
+      position: [center.x, center.y - 2, box.max.z + 0.01],
       scale: [
         width * shrinkFactor,
         height * shrinkFactor,
@@ -102,39 +103,43 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
   if (!meshData) return null;
 
   return (
-    <mesh
-      geometry={meshData.geometry}
-      position={meshData.position}
-      rotation={meshData.rotation}
-      scale={meshData.scale}
-    >
-      {/* Glass material */}
-      <meshPhysicalMaterial
-        color="#ffffff"
-        metalness={0.05}
-        roughness={0.0}
-        transmission={1}
-        ior={2.086}
-        thickness={0.5}
-        transparent
-        opacity={0.3}
-        side={THREE.DoubleSide}
-      />
+    <Center>
+      <mesh
+        geometry={meshData.geometry}
+        position={[0, 0, 0]}
+        rotation={meshData.rotation}
+        scale={meshData.scale}
+      >
+        {/* Glass material */}
+        <meshPhysicalMaterial
+          color="#ffffff"
+          metalness={0.05}
+          roughness={0.0}
+          transmission={1}
 
-      {/* ✅ Decal safely inside mesh */}
-      {texture && (
-        <Decal
-          key={text}
-          position={position}
-          rotation={[0, 0, 0]}
-          scale={scale}
-          map={texture}
+          ior={1.5}
+          thickness={0.5}
           transparent
-          polygonOffset
-          polygonOffsetFactor={-1}
+          opacity={1.0}
+          side={THREE.DoubleSide}
+          reflectivity={0.1}
         />
-      )}
-    </mesh>
+
+        {/* ✅ Decal safely inside mesh */}
+        {texture && (
+          <Decal
+            key={text}
+            position={position}
+            rotation={[0, 0, 0]}
+            scale={scale}
+            map={texture}
+            transparent
+            polygonOffset
+            polygonOffsetFactor={-1}
+          />
+        )}
+      </mesh>
+    </Center>
   );
 }
 
