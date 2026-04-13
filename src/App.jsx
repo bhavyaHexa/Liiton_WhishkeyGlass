@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import Lights from "./components/Lights";
 import Model from "./components/Model";
@@ -10,10 +10,18 @@ import {
 import TextCadPanel from "./components/TextCadPanel";
 
 export default function App() {
+  // ✅ GLOBAL STATE
+  const [text, setText] = useState("Liiton Glass");
+  const [fontBuffer, setFontBuffer] = useState(null);
+
   return (
     <div className="app-container" style={{ position: "relative" }}>
-      {/* ✅ RIGHT PANEL */}
-      <TextCadPanel />
+      {/* ✅ PANEL (controlled by App) */}
+      <TextCadPanel
+        text={text}
+        setText={setText}
+        setFontBuffer={setFontBuffer}
+      />
 
       <Canvas camera={{ position: [0, 1, 1], fov: 10 }} shadows>
         <SceneEnvController />
@@ -21,7 +29,10 @@ export default function App() {
         <color attach="background" args={["#000000"]} />
 
         <Lights />
-        <Model url="/01.glb" />
+
+        {/* ✅ PASS DATA TO MODEL */}
+        <Model url="/1.glb" text={text} fontBuffer={fontBuffer} />
+
         <CameraControls />
       </Canvas>
     </div>
