@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as makerjs from "makerjs";
 import opentype from "opentype.js";
+import JSZip from "jszip";
 import { downloadTextFile } from "../utils/download";
 import fontFile from "../assets/berkshire-swash.regular.ttf";
 
@@ -38,7 +39,7 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
     const m = makerjs.measure.modelExtents(model);
     if (!m) return;
     const height = m.high[1] - m.low[1];
-    
+
     // Position Left Edge at offset.x
     // Position Vertical Center at offset.y
     makerjs.model.move(model, [-m.low[0] + offset.x, -m.low[1] - (height / 2) + offset.y]);
@@ -64,44 +65,31 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
     return `${safeText}.${ext}`;
   };
 
-  // ⭐ DXF EXPORT (Synchronized with 3D Origin)
-  const exportDXF = () => {
-    if (!model) return;
+  // --- HELPERS TO GET CONTENT WITHOUT DOWNLOADING ---
 
+  const getDXFContent = () => {
+    if (!model) return null;
     let cloned = makerjs.cloneObject(model);
     cloned = makeBold(cloned, 1.2);
-
-    // ✅ Scale to match mm
-    makerjs.model.scale(cloned, 0.1); 
-
-    // ✅ Position relative to glass top-left
+    makerjs.model.scale(cloned, 0.1);
     alignToOffset(cloned, decalOffset);
-
-    const dxf = makerjs.exporter.toDXF(cloned);
-    downloadTextFile(dxf, getFileName("dxf"), "application/dxf");
+    return makerjs.exporter.toDXF(cloned);
   };
 
-  // ⭐ SVG EXPORT (Synchronized with 3D Origin)
-  const exportSVG = () => {
-    if (!model) return;
-
+  const getSVGContent = () => {
+    if (!model) return null;
     let cloned = makerjs.cloneObject(model);
     cloned = makeBold(cloned, 1.2);
-    
-    // ✅ Scale to match mm
     makerjs.model.scale(cloned, 0.1);
-
-    // ✅ Position relative to glass top-left
     alignToOffset(cloned, decalOffset);
 
     const m = makerjs.measure.modelExtents(cloned);
-    if (!m) return;
+    if (!m) return null;
 
-    // Viewport should be large enough to show the glass area or at least the text in its offset
     const viewWidth = m.high[0] + 10;
     const viewHeight = m.high[1] + 10;
 
-    const svg = makerjs.exporter.toSVG(cloned, {
+    return makerjs.exporter.toSVG(cloned, {
       useSvgPathOnly: true,
       fill: "#6e6e6e",
       stroke: "none",
@@ -111,8 +99,96 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
         height: `${viewHeight}mm`,
       },
     });
+  };
 
-    downloadTextFile(svg, getFileName("svg"), "image/svg+xml");
+  const getPNGData = () => {
+    return new Promise((resolve) => {
+      if (!model) return resolve(null);
+
+      let cloned = makerjs.cloneObject(model);
+      cloned = makeBold(cloned, 1.2);
+      makerjs.model.scale(cloned, 0.1);
+      alignToOffset(cloned, decalOffset);
+
+      const m = makerjs.measure.modelExtents(cloned);
+      if (!m) return resolve(null);
+
+      const viewWidth = m.high[0] + 10;
+      const viewHeight = m.high[1] + 10;
+
+      const svg = makerjs.exporter.toSVG(cloned, {
+        useSvgPathOnly: true,
+        fill: "#6e6e6e",
+        stroke: "none",
+        svgAttrs: {
+          viewBox: `0 0 ${viewWidth} ${viewHeight}`,
+          width: `${viewWidth}mm`,
+          height: `${viewHeight}mm`,
+        },
+      });
+
+      const scale = 10;
+      const canvas = document.createElement("canvas");
+      canvas.width = viewWidth * scale;
+      canvas.height = viewHeight * scale;
+      const ctx = canvas.getContext("2d");
+
+      const img = new Image();
+      const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          resolve(blob);
+        }, "image/png");
+      };
+      img.src = url;
+    });
+  };
+
+  // --- ACTIONS ---
+
+  const exportDXF = () => {
+    const content = getDXFContent();
+    if (content) downloadTextFile(content, getFileName("dxf"), "application/dxf");
+  };
+
+  const exportSVG = () => {
+    const content = getSVGContent();
+    if (content) downloadTextFile(content, getFileName("svg"), "image/svg+xml");
+  };
+
+  const exportPNG = async () => {
+    const blob = await getPNGData();
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = getFileName("png");
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const exportDXFSVGZip = async () => {
+    if (!isReady) return;
+
+    const zip = new JSZip();
+    const dxf = getDXFContent();
+    const svg = getSVGContent();
+
+    if (dxf) zip.file(getFileName("dxf"), dxf);
+    if (svg) zip.file(getFileName("svg"), svg);
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = getFileName("zip");
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const isReady = Boolean(model);
@@ -161,6 +237,27 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button
+          onClick={exportDXFSVGZip}
+          disabled={!isReady}
+          style={{
+            padding: "12px 10px",
+            borderRadius: 6,
+            border: "none",
+            background: isReady ? "#f59e0b" : "#334155",
+            color: "white",
+            fontWeight: "bold",
+            fontSize: 14,
+            cursor: isReady ? "pointer" : "not-allowed",
+            marginBottom: 10,
+            textTransform: "uppercase"
+          }}
+        >
+          Download ZIP (DXF & SVG)
+        </button>
+
+        <div style={{ height: 1, background: "#1e293b", margin: "10px 0" }} />
+
+        <button
           onClick={exportSVG}
           disabled={!isReady}
           style={{
@@ -169,9 +266,25 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
             border: "none",
             background: isReady ? "#2563eb" : "#334155",
             color: "white",
+            cursor: isReady ? "pointer" : "not-allowed"
           }}
         >
           Export SVG
+        </button>
+
+        <button
+          onClick={exportPNG}
+          disabled={!isReady}
+          style={{
+            padding: 10,
+            borderRadius: 6,
+            border: "none",
+            background: isReady ? "#6366f1" : "#334155",
+            color: "white",
+            cursor: isReady ? "pointer" : "not-allowed"
+          }}
+        >
+          Export PNG
         </button>
 
         <button
@@ -183,6 +296,7 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
             border: "none",
             background: isReady ? "#16a34a" : "#334155",
             color: "white",
+            cursor: isReady ? "pointer" : "not-allowed"
           }}
         >
           Export DXF
