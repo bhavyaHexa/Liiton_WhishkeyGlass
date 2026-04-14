@@ -7,7 +7,7 @@ import TextCadPanel from "./components/TextCadPanel";
 
 export default function App() {
   // ✅ GLOBAL STATE
-  const [text, setText] = useState("Liiton Glass");
+  const [text, setText] = useState("Test Order");
   const [fontBuffer, setFontBuffer] = useState(null);
 
   return (

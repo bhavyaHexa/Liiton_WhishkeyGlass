@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as makerjs from "makerjs";
 import opentype from "opentype.js";
 import { downloadTextFile } from "../utils/download";
-import fontFile from "../assets/Onest[wght].ttf";
+import fontFile from "../assets/berkshire-swash.regular.ttf";
 
 export default function TextCadPanel({ text, setText, setFontBuffer }) {
   const [font, setFont] = useState(null);
