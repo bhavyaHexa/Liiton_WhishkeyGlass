@@ -25,7 +25,7 @@ export default function App() {
         className="canvas-container"
         style={{ width: "calc(100% - 300px)", height: "100%" }}
       >
-        <Canvas camera={{ position: [0, 0, 75], fov: 10 }} shadows>
+        <Canvas camera={{ position: [0, 10, 75], fov: 15 }} shadows>
           <color attach="background" args={["#000000"]} />
 
           <Lights />
@@ -37,7 +37,10 @@ export default function App() {
             fontBuffer={fontBuffer}
             onUpdateOffset={setDecalOffset}
           />
-
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4.5, 8]}>
+            <planeGeometry args={[100, 100]} />
+            <meshBasicMaterial color="#2b2b2b" />
+          </mesh>
 
           <CameraControls />
         </Canvas>
