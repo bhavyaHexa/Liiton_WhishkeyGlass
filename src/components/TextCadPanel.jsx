@@ -4,7 +4,7 @@ import opentype from "opentype.js";
 import { downloadTextFile } from "../utils/download";
 import fontFile from "../assets/berkshire-swash.regular.ttf";
 
-export default function TextCadPanel({ text, setText, setFontBuffer }) {
+export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset }) {
   const [font, setFont] = useState(null);
 
   // ✅ LOAD FONT (used by decal + CAD export)
@@ -33,11 +33,15 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     }
   }, [text, font]);
 
-  // ⭐ Move model to positive quadrant + padding
-  const moveToBottomLeft = (model, padding = 5) => {
+  // ⭐ Align model start point (left) and center (Y) to a specific offset
+  const alignToOffset = (model, offset) => {
     const m = makerjs.measure.modelExtents(model);
     if (!m) return;
-    makerjs.model.move(model, [-m.low[0] + padding, -m.low[1] + padding]);
+    const height = m.high[1] - m.low[1];
+    
+    // Position Left Edge at offset.x
+    // Position Vertical Center at offset.y
+    makerjs.model.move(model, [-m.low[0] + offset.x, -m.low[1] - (height / 2) + offset.y]);
   };
 
   // ⭐ MAKE TEXT BOLD USING OFFSET (no font download needed)
@@ -60,61 +64,49 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     return `${safeText}.${ext}`;
   };
 
-  // ⭐ DXF EXPORT (bold + padded)
+  // ⭐ DXF EXPORT (Synchronized with 3D Origin)
   const exportDXF = () => {
     if (!model) return;
-
-    const PADDING = 5;
-
-    let cloned = makerjs.cloneObject(model);
-    cloned = makeBold(cloned, 1.2);
-
-    // ✅ Scale to match mm (from calibration units to real mm)
-    // font size 88.5 produces ~391 units, we want 39.1 units for DXF
-    makerjs.model.scale(cloned, 0.1);
-
-    // ✅ Measure before moving/exporting
-    const m = makerjs.measure.modelExtents(cloned);
-    if (m) {
-      const width = m.high[0] - m.low[0];
-      const height = m.high[1] - m.low[1];
-    }
-
-    moveToBottomLeft(cloned, PADDING);
-
-    const dxf = makerjs.exporter.toDXF(cloned);
-    downloadTextFile(dxf, getFileName("dxf"), "application/dxf");
-  };
-
-  // ⭐ SVG EXPORT (bold + no clipping + engraving safe)
-  const exportSVG = () => {
-    if (!model) return;
-
-    const PADDING = 5;
 
     let cloned = makerjs.cloneObject(model);
     cloned = makeBold(cloned, 1.2);
 
     // ✅ Scale to match mm
+    makerjs.model.scale(cloned, 0.1); 
+
+    // ✅ Position relative to glass top-left
+    alignToOffset(cloned, decalOffset);
+
+    const dxf = makerjs.exporter.toDXF(cloned);
+    downloadTextFile(dxf, getFileName("dxf"), "application/dxf");
+  };
+
+  // ⭐ SVG EXPORT (Synchronized with 3D Origin)
+  const exportSVG = () => {
+    if (!model) return;
+
+    let cloned = makerjs.cloneObject(model);
+    cloned = makeBold(cloned, 1.2);
+    
+    // ✅ Scale to match mm
     makerjs.model.scale(cloned, 0.1);
+
+    // ✅ Position relative to glass top-left
+    alignToOffset(cloned, decalOffset);
 
     const m = makerjs.measure.modelExtents(cloned);
     if (!m) return;
 
-    const width = m.high[0] - m.low[0];
-    const height = m.high[1] - m.low[1];
-
-
-    moveToBottomLeft(cloned, PADDING);
-
-    const viewWidth = width + PADDING * 2;
-    const viewHeight = height + PADDING * 2;
+    // Viewport should be large enough to show the glass area or at least the text in its offset
+    // For now we'll just bounding box it with some padding for the SVG preview
+    const viewWidth = m.high[0] + 10;
+    const viewHeight = Math.abs(m.low[1]) + 10;
 
     const svg = makerjs.exporter.toSVG(cloned, {
       useSvgPathOnly: true,
       strokeWidth: 0.1,
       svgAttrs: {
-        viewBox: `0 0 ${viewWidth} ${viewHeight}`,
+        viewBox: `0 ${-viewHeight} ${viewWidth} ${viewHeight}`,
         width: `${viewWidth}mm`,
         height: `${viewHeight}mm`,
       },

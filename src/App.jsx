@@ -9,6 +9,7 @@ export default function App() {
   // ✅ GLOBAL STATE
   const [text, setText] = useState("Test Order");
   const [fontBuffer, setFontBuffer] = useState(null);
+  const [decalOffset, setDecalOffset] = useState({ x: 0, y: 0 });
 
   return (
     <div className="app-container" style={{ position: "relative" }}>
@@ -17,6 +18,7 @@ export default function App() {
         text={text}
         setText={setText}
         setFontBuffer={setFontBuffer}
+        decalOffset={decalOffset}
       />
 
       <div
@@ -29,7 +31,12 @@ export default function App() {
           <Lights />
 
           {/* ✅ PASS DATA TO MODEL */}
-          <Model url="/Grand_Canyon_Glass_01.glb" text={text} fontBuffer={fontBuffer} />
+          <Model
+            url="/Grand_Canyon_Glass_01.glb"
+            text={text}
+            fontBuffer={fontBuffer}
+            onUpdateOffset={setDecalOffset}
+          />
 
 
           <CameraControls />

@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useEffect } from "react";
 import { useGLTF, Decal, Center, MeshTransmissionMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import * as makerjs from "makerjs";
@@ -6,7 +6,7 @@ import opentype from "opentype.js";
 import { svgToTexture } from "../utils/svgToTexture";
 import Loader from "./Loader";
 
-function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
+function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
   const { nodes } = useGLTF(url);
   const scene = nodes.Scene || nodes;
 
@@ -54,8 +54,8 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
   }, [text, fontBuffer]);
 
   // ✅ Calculate decal position & scale
-  const { position, scale } = useMemo(() => {
-    if (!meshData) return { position: [0, 0, 0], scale: [1, 1, 1] };
+  const { position, scale, offset } = useMemo(() => {
+    if (!meshData) return { position: [0, 0, 0], scale: [1, 1, 1], offset: { x: 0, y: 0 } };
 
     const tempMesh = new THREE.Mesh(meshData.geometry);
     tempMesh.rotation.copy(meshData.rotation);
@@ -70,10 +70,8 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
     box.getCenter(center);
 
     const meshWidth = size.x;
-
+    
     // Target size in THREE.js units (1 unit = 10mm)
-    // svgWidth at font size 88.5 is approx 390.8 (for "Test Order")
-    // We want 39.1mm = 3.91 units.
     let targetWidth = svgWidth / 100;
     let targetHeight = svgHeight / 100;
 
@@ -84,15 +82,33 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
       targetHeight = targetWidth / aspect;
     }
 
+    const decalPos = [center.x, center.y - 2, box.max.z + 0.01];
+    const startX = decalPos[0] - (targetWidth / 2);
+
+    // ✅ OFFSET CALCULATION (Relative to Top-Left)
+    // x is the start point (left edge) of the decal
+    const relOffset = {
+      x: (startX - box.min.x) * 10,
+      y: (decalPos[1] - box.max.y) * 10 
+    };
+
     return {
-      position: [center.x, center.y - 2, box.max.z + 0.01],
+      position: decalPos,
       scale: [
         targetWidth,
         targetHeight,
         targetHeight + 0.5
       ],
+      offset: relOffset
     };
   }, [meshData, aspect, svgWidth, svgHeight]);
+
+  // ✅ Send offset back to parent for DXF sync
+  useEffect(() => {
+    if (onUpdateOffset) {
+      onUpdateOffset(offset);
+    }
+  }, [offset, onUpdateOffset]);
 
 
   if (!meshData) return null;
@@ -225,10 +241,10 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
   );
 }
 
-export default function Model({ url, text, fontBuffer }) {
+export default function Model({ url, text, fontBuffer, onUpdateOffset }) {
   return (
     <Suspense fallback={<Loader />}>
-      <GlassModel url={url} text={text} fontBuffer={fontBuffer} />
+      <GlassModel url={url} text={text} fontBuffer={fontBuffer} onUpdateOffset={onUpdateOffset} />
     </Suspense>
   );
 }
