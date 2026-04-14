@@ -150,37 +150,17 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
   // --- ACTIONS ---
 
-  const exportDXF = () => {
-    const content = getDXFContent();
-    if (content) downloadTextFile(content, getFileName("dxf"), "application/dxf");
-  };
-
-  const exportSVG = () => {
-    const content = getSVGContent();
-    if (content) downloadTextFile(content, getFileName("svg"), "image/svg+xml");
-  };
-
-  const exportPNG = async () => {
-    const blob = await getPNGData();
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = getFileName("png");
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const exportDXFSVGZip = async () => {
+  const exportAllFiles = async () => {
     if (!isReady) return;
 
     const zip = new JSZip();
     const dxf = getDXFContent();
     const svg = getSVGContent();
+    const pngBlob = await getPNGData();
 
     if (dxf) zip.file(getFileName("dxf"), dxf);
     if (svg) zip.file(getFileName("svg"), svg);
+    if (pngBlob) zip.file(getFileName("png"), pngBlob);
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(zipBlob);
@@ -237,7 +217,7 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button
-          onClick={exportDXFSVGZip}
+          onClick={exportAllFiles}
           disabled={!isReady}
           style={{
             padding: "12px 10px",
@@ -252,54 +232,7 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
             textTransform: "uppercase"
           }}
         >
-          Download ZIP (DXF & SVG)
-        </button>
-
-        <div style={{ height: 1, background: "#1e293b", margin: "10px 0" }} />
-
-        <button
-          onClick={exportSVG}
-          disabled={!isReady}
-          style={{
-            padding: 10,
-            borderRadius: 6,
-            border: "none",
-            background: isReady ? "#2563eb" : "#334155",
-            color: "white",
-            cursor: isReady ? "pointer" : "not-allowed"
-          }}
-        >
-          Export SVG
-        </button>
-
-        <button
-          onClick={exportPNG}
-          disabled={!isReady}
-          style={{
-            padding: 10,
-            borderRadius: 6,
-            border: "none",
-            background: isReady ? "#6366f1" : "#334155",
-            color: "white",
-            cursor: isReady ? "pointer" : "not-allowed"
-          }}
-        >
-          Export PNG
-        </button>
-
-        <button
-          onClick={exportDXF}
-          disabled={!isReady}
-          style={{
-            padding: 10,
-            borderRadius: 6,
-            border: "none",
-            background: isReady ? "#16a34a" : "#334155",
-            color: "white",
-            cursor: isReady ? "pointer" : "not-allowed"
-          }}
-        >
-          Export DXF
+          Download All Files (ZIP)
         </button>
       </div>
     </div>
