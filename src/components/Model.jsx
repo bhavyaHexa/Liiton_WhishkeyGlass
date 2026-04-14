@@ -82,7 +82,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
       targetHeight = targetWidth / aspect;
     }
 
-    const decalPos = [center.x, center.y - 2, box.max.z + 0.01];
+    const decalPos = [center.x, center.y - 0.6, box.max.z + 0.01];
     const startX = decalPos[0] - (targetWidth / 2);
 
     // ✅ OFFSET CALCULATION (Relative to Bottom-Left)
@@ -192,11 +192,10 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
                 scale={scale}
                 map={texture}
                 transparent
-                depthTest={false}
-                depthWrite={false}
                 polygonOffset
                 polygonOffsetFactor={-10}
-
+                depthTest={true}
+                depthWrite={false}
                 renderOrder={10}
               />
             )}
