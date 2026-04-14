@@ -5,22 +5,14 @@ import { useControls } from 'leva'
 import { easing } from 'maath'
 
 export default function Lights() {
-  const envRef = useRef()
-
-  const { rotationX, rotationY, rotationZ } = useControls("Environment", {
-    rotationX: { value: 0, min: 0, max: Math.PI * 2, step: 0.01 },
-    rotationY: { value: 0, min: 0, max: Math.PI * 2, step: 0.01 },
-    rotationZ: { value: 0, min: 0, max: Math.PI * 2, step: 0.01 },
-  })
-
-
+  const envRef = useRef();
 
   return (
     <>
       <ambientLight intensity={1.0} />
 
       {/* Dynamic Environment from Code 1 */}
-      <Environment frames={Infinity} preset="city" resolution={256} environmentIntensity={0.4} environmentRotation={[rotationX, rotationY, rotationZ]}>
+      <Environment frames={Infinity} preset="city" resolution={256} environmentIntensity={0.4} environmentRotation={[0, 0, 0]}>
         <Lightformer intensity={1} rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={[10, 10, 1]} />
         <Lightformer intensity={1} rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={[10, 10, 1]} />
         <group rotation={[Math.PI / 2, 1, 0]}>
