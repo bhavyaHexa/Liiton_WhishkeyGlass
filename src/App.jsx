@@ -1,16 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import Lights from "./components/Lights";
 import Model from "./components/Model";
 import CameraControls from "./components/CameraControls";
 import TextCadPanel from "./components/TextCadPanel";
+import { useProgress } from "@react-three/drei";
+import Loader from "./components/Loader";
 
 export default function App() {
   // ✅ GLOBAL STATE
   const [text, setText] = useState("Test Order");
   const [fontBuffer, setFontBuffer] = useState(null);
   const [decalOffset, setDecalOffset] = useState({ x: 0, y: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const { progress } = useProgress();
 
+  // ✅ Every time the page refreshes, ensure loader is visible for at least 1.5s
+  useEffect(() => {
+    const minTime = setTimeout(() => {
+      if (progress === 100) {
+        setIsLoading(false);
+      }
+    }, 1500);
+
+    return () => clearTimeout(minTime);
+  }, [progress]);
   return (
     <div className="app-container" style={{ position: "relative" }}>
       {/* ✅ PANEL (controlled by App) */}
@@ -20,6 +34,7 @@ export default function App() {
         setFontBuffer={setFontBuffer}
         decalOffset={decalOffset}
       />
+      <Loader isLoading={isLoading} progress={progress} isFullPage={true} />
 
       <div
         className="canvas-container"

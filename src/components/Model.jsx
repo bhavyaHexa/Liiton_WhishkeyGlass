@@ -248,7 +248,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
 
 export default function Model({ url, text, fontBuffer, onUpdateOffset }) {
   return (
-    <Suspense fallback={<Loader />}>
+    <Suspense fallback={<Loader isFullPage={false} />}>
       <GlassModel url={url} text={text} fontBuffer={fontBuffer} onUpdateOffset={onUpdateOffset} />
     </Suspense>
   );
