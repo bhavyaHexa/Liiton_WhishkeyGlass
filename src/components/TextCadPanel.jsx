@@ -98,15 +98,14 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
     if (!m) return;
 
     // Viewport should be large enough to show the glass area or at least the text in its offset
-    // For now we'll just bounding box it with some padding for the SVG preview
     const viewWidth = m.high[0] + 10;
-    const viewHeight = Math.abs(m.low[1]) + 10;
+    const viewHeight = m.high[1] + 10;
 
     const svg = makerjs.exporter.toSVG(cloned, {
       useSvgPathOnly: true,
       strokeWidth: 0.1,
       svgAttrs: {
-        viewBox: `0 ${-viewHeight} ${viewWidth} ${viewHeight}`,
+        viewBox: `0 0 ${viewWidth} ${viewHeight}`,
         width: `${viewWidth}mm`,
         height: `${viewHeight}mm`,
       },

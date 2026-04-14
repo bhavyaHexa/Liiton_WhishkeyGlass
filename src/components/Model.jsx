@@ -85,11 +85,11 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
     const decalPos = [center.x, center.y - 2, box.max.z + 0.01];
     const startX = decalPos[0] - (targetWidth / 2);
 
-    // ✅ OFFSET CALCULATION (Relative to Top-Left)
-    // x is the start point (left edge) of the decal
+    // ✅ OFFSET CALCULATION (Relative to Bottom-Left)
+    // 0,0 is now bottom-left of the glass. Distance in mm (*10)
     const relOffset = {
       x: (startX - box.min.x) * 10,
-      y: (decalPos[1] - box.max.y) * 10 
+      y: (decalPos[1] - box.min.y) * 10 // from bottom, typically positive
     };
 
     return {
