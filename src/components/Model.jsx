@@ -99,7 +99,13 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
         targetHeight,
         targetHeight + 3
       ],
-      offset: relOffset
+      offset: {
+        ...relOffset,
+        glassSize: {
+          w: size.x * 10,
+          h: size.y * 10
+        }
+      }
     };
   }, [meshData, aspect, svgWidth, svgHeight]);
 

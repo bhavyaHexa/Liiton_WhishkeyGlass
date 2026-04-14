@@ -67,32 +67,83 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
   // --- HELPERS TO GET CONTENT WITHOUT DOWNLOADING ---
 
-  const getDXFContent = () => {
+  // ⭐ CREATE DASHED MODEL
+  const createDashedLine = (p1, p2, dashLen = 2, gapLen = 1) => {
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const model = { paths: {} };
+    let currentDist = 0;
+    let i = 0;
+
+    while (currentDist < dist) {
+      const endDist = Math.min(currentDist + dashLen, dist);
+
+      const startP = [p1[0] + currentDist * cos, p1[1] + currentDist * sin];
+      const endP = [p1[0] + endDist * cos, p1[1] + endDist * sin];
+
+      model.paths[`dash_${i++}`] = new makerjs.paths.Line(startP, endP);
+      currentDist += dashLen + gapLen;
+    }
+    return model;
+  };
+
+  const createDashedRect = (width, height, dashLen = 2, gapLen = 1) => {
+    const points = [[0, 0], [width, 0], [width, height], [0, height], [0, 0]];
+    const model = { models: {} };
+    for (let i = 0; i < 4; i++) {
+      model.models[`side_${i}`] = createDashedLine(points[i], points[i + 1], dashLen, gapLen);
+    }
+    return model;
+  };
+
+  const getFinalModel = () => {
     if (!model) return null;
-    let cloned = makerjs.cloneObject(model);
-    cloned = makeBold(cloned, 1.2);
-    makerjs.model.scale(cloned, 0.1);
-    alignToOffset(cloned, decalOffset);
-    return makerjs.exporter.toDXF(cloned);
+
+    let textPart = makerjs.cloneObject(model);
+    textPart = makeBold(textPart, 1.2);
+    makerjs.model.scale(textPart, 0.1);
+    alignToOffset(textPart, decalOffset);
+
+    // Border: Glass model bounding box (e.g. 50x60mm)
+    let border = null;
+    if (decalOffset.glassSize) {
+      border = createDashedRect(decalOffset.glassSize.w, decalOffset.glassSize.h, 5, 2);
+    }
+
+    return {
+      models: {
+        text: textPart,
+        ...(border && { border: border })
+      }
+    };
+  };
+
+  const getDXFContent = () => {
+    const finalModel = getFinalModel();
+    if (!finalModel) return null;
+    return makerjs.exporter.toDXF(finalModel);
   };
 
   const getSVGContent = () => {
-    if (!model) return null;
-    let cloned = makerjs.cloneObject(model);
-    cloned = makeBold(cloned, 1.2);
-    makerjs.model.scale(cloned, 0.1);
-    alignToOffset(cloned, decalOffset);
+    const finalModel = getFinalModel();
+    if (!finalModel) return null;
 
-    const m = makerjs.measure.modelExtents(cloned);
+    const m = makerjs.measure.modelExtents(finalModel);
     if (!m) return null;
 
     const viewWidth = m.high[0] + 10;
     const viewHeight = m.high[1] + 10;
 
-    return makerjs.exporter.toSVG(cloned, {
+    return makerjs.exporter.toSVG(finalModel, {
       useSvgPathOnly: true,
       fill: "#6e6e6e",
-      stroke: "none",
+      stroke: "#6e6e6e", // Ensure border lines are visible
+      strokeWidth: "0.1mm",
       svgAttrs: {
         viewBox: `0 0 ${viewWidth} ${viewHeight}`,
         width: `${viewWidth}mm`,
@@ -103,23 +154,20 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
   const getPNGData = () => {
     return new Promise((resolve) => {
-      if (!model) return resolve(null);
+      const finalModel = getFinalModel();
+      if (!finalModel) return resolve(null);
 
-      let cloned = makerjs.cloneObject(model);
-      cloned = makeBold(cloned, 1.2);
-      makerjs.model.scale(cloned, 0.1);
-      alignToOffset(cloned, decalOffset);
-
-      const m = makerjs.measure.modelExtents(cloned);
+      const m = makerjs.measure.modelExtents(finalModel);
       if (!m) return resolve(null);
 
       const viewWidth = m.high[0] + 10;
       const viewHeight = m.high[1] + 10;
 
-      const svg = makerjs.exporter.toSVG(cloned, {
+      const svg = makerjs.exporter.toSVG(finalModel, {
         useSvgPathOnly: true,
         fill: "#6e6e6e",
-        stroke: "none",
+        stroke: "#6e6e6e",
+        strokeWidth: "0.1mm",
         svgAttrs: {
           viewBox: `0 0 ${viewWidth} ${viewHeight}`,
           width: `${viewWidth}mm`,

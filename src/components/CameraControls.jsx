@@ -11,8 +11,8 @@ export default function CameraControls() {
       maxDistance={100}
       truckSpeed={0}
       dollySpeed={0.2}
-      minAzimuthAngle={-1}
-      maxAzimuthAngle={1}
+      minAzimuthAngle={-0.5}
+      maxAzimuthAngle={0.5}
     />
   );
 }
