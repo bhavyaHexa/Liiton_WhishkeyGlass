@@ -103,7 +103,8 @@ export default function TextCadPanel({ text, setText, setFontBuffer, decalOffset
 
     const svg = makerjs.exporter.toSVG(cloned, {
       useSvgPathOnly: true,
-      strokeWidth: 0.1,
+      fill: "#6e6e6e",
+      stroke: "none",
       svgAttrs: {
         viewBox: `0 0 ${viewWidth} ${viewHeight}`,
         width: `${viewWidth}mm`,
