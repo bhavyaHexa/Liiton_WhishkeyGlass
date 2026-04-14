@@ -24,7 +24,7 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     if (!font || !text) return null;
 
     try {
-      const path = font.getPath(text, 0, 0, 50);
+      const path = font.getPath(text, 0, 0, 88.5); // Calibrated to ~39.1
       const svgPath = path.toPathData(2);
       return makerjs.importer.fromSVGPathData(svgPath);
     } catch (err) {
@@ -68,6 +68,18 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
 
     let cloned = makerjs.cloneObject(model);
     cloned = makeBold(cloned, 1.2);
+
+    // ✅ Scale to match mm (from calibration units to real mm)
+    // font size 88.5 produces ~391 units, we want 39.1 units for DXF
+    makerjs.model.scale(cloned, 0.1);
+
+    // ✅ Measure before moving/exporting
+    const m = makerjs.measure.modelExtents(cloned);
+    if (m) {
+      const width = m.high[0] - m.low[0];
+      const height = m.high[1] - m.low[1];
+    }
+
     moveToBottomLeft(cloned, PADDING);
 
     const dxf = makerjs.exporter.toDXF(cloned);
@@ -83,11 +95,15 @@ export default function TextCadPanel({ text, setText, setFontBuffer }) {
     let cloned = makerjs.cloneObject(model);
     cloned = makeBold(cloned, 1.2);
 
+    // ✅ Scale to match mm
+    makerjs.model.scale(cloned, 0.1);
+
     const m = makerjs.measure.modelExtents(cloned);
     if (!m) return;
 
     const width = m.high[0] - m.low[0];
     const height = m.high[1] - m.low[1];
+
 
     moveToBottomLeft(cloned, PADDING);
 

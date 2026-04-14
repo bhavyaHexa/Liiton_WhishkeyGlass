@@ -24,11 +24,11 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
   }, [nodes]);
 
   // ✅ Generate SVG texture
-  const { texture, aspect } = useMemo(() => {
-    if (!fontBuffer || text.length === 0) return { texture: null, aspect: 1 };
+  const { texture, aspect, svgWidth, svgHeight } = useMemo(() => {
+    if (!fontBuffer || text.length === 0) return { texture: null, aspect: 1, svgWidth: 0, svgHeight: 0 };
 
     const font = opentype.parse(fontBuffer);
-    const path = font.getPath(text, 0, 0, 100);
+    const path = font.getPath(text, 0, 0, 88.5); // Calibrated to ~39.1mm width for "Test Order"
     const svgPath = path.toPathData(2);
 
     const model = makerjs.importer.fromSVGPathData(svgPath);
@@ -48,6 +48,8 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
     return {
       texture: svgToTexture(svg),
       aspect: width / height,
+      svgWidth: width,
+      svgHeight: height
     };
   }, [text, fontBuffer]);
 
@@ -68,48 +70,30 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
     box.getCenter(center);
 
     const meshWidth = size.x;
-    const maxHeight = meshWidth * 0.2;
 
-    let width = maxHeight * aspect;
-    let height = maxHeight;
+    // Target size in THREE.js units (1 unit = 10mm)
+    // svgWidth at font size 88.5 is approx 390.8 (for "Test Order")
+    // We want 39.1mm = 3.91 units.
+    let targetWidth = svgWidth / 100;
+    let targetHeight = svgHeight / 100;
 
-    const maxWidth = meshWidth * 0.9;
-    if (width > maxWidth) {
-      width = maxWidth;
-      height = width / aspect;
+    // Safety check: Don't exceed 85% of glass width
+    const maxWidth = meshWidth * 0.85;
+    if (targetWidth > maxWidth) {
+      targetWidth = maxWidth;
+      targetHeight = targetWidth / aspect;
     }
-
-    const shrinkFactor = 0.35;
 
     return {
       position: [center.x, center.y - 2, box.max.z + 0.01],
       scale: [
-        width * shrinkFactor,
-        height * shrinkFactor,
-        height * shrinkFactor + 0.5
+        targetWidth,
+        targetHeight,
+        targetHeight + 0.5
       ],
     };
-  }, [meshData, aspect]);
+  }, [meshData, aspect, svgWidth, svgHeight]);
 
-  // 🐞 DEBUGGER → count how many meshes receive the decal
-  const decalTargets = useMemo(() => {
-    if (!texture) return 0;
-
-    let count = 0;
-    if (nodes.Glass_Main) count += 1;
-    if (!nodes.Glass_Base && !nodes.Glass_Main && meshData) count += 1;
-
-    return count;
-  }, [texture, nodes, meshData]);
-
-  // 🐞 SINGLE DEBUG LOG
-  useMemo(() => {
-    console.log("🧩 Decal Debugger");
-    console.log("Texture exists:", !!texture);
-    console.log("Glass_Main exists:", !!nodes.Glass_Main);
-    console.log("Fallback mesh used:", !nodes.Glass_Base && !nodes.Glass_Main);
-    console.log("👉 Decal applied on mesh count:", decalTargets);
-  }, [decalTargets, texture, nodes]);
 
   if (!meshData) return null;
 
@@ -125,7 +109,22 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
             rotation={nodes.Glass_Base.rotation}
             scale={nodes.Glass_Base.scale}
           >
-            <MeshTransmissionMaterial
+
+            <meshPhysicalMaterial
+              color="#ffffff"
+              // metalness={0.05}
+              roughness={0.0}
+              transmission={1}
+              ior={1.5}
+              thickness={0.2}
+              transparent
+              opacity={1.0}
+              side={THREE.DoubleSide}
+            // reflectivity={0.5}
+            // depthWrite={false}
+            />
+
+            {/* <MeshTransmissionMaterial
               thickness={0.5}
               ior={1.5}
               roughness={0.0}
@@ -134,7 +133,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
               temporalDistortion={0.5}
               clearcoat={1}
               color="#ffffff"
-            />
+            /> */}
           </mesh>
         )}
 
@@ -146,7 +145,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
             rotation={nodes.Glass_Main.rotation}
             scale={nodes.Glass_Main.scale}
           >
-            <meshPhysicalMaterial
+            {/* <meshPhysicalMaterial
               color="#ffffff"
               // metalness={0.05}
               roughness={0.0}
@@ -158,9 +157,17 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer }) {
               side={THREE.DoubleSide}
             // reflectivity={0.5}
             // depthWrite={false}
-
+            /> */}
+            <MeshTransmissionMaterial
+              thickness={0.1}
+              ior={1.5}
+              roughness={0.0}
+              // distortion={0.0}
+              // distortionScale={0.3}
+              // temporalDistortion={0.5}
+              // clearcoat={1}
+              color="#ffffff"
             />
-
             {texture && (
               <Decal
                 key={text}
