@@ -32,7 +32,7 @@ export default function App() {
 
           {/* ✅ PASS DATA TO MODEL */}
           <Model
-            url="/Grand_Canyon_Glass_01.glb"
+            url="/Grand_Canyon_Glass_02.glb"
             text={text}
             fontBuffer={fontBuffer}
             onUpdateOffset={setDecalOffset}
