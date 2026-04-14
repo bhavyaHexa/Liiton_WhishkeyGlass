@@ -70,7 +70,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
     box.getCenter(center);
 
     const meshWidth = size.x;
-    
+
     // Target size in THREE.js units (1 unit = 10mm)
     let targetWidth = svgWidth / 100;
     let targetHeight = svgHeight / 100;
@@ -97,7 +97,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
       scale: [
         targetWidth,
         targetHeight,
-        targetHeight + 0.5
+        targetHeight + 3
       ],
       offset: relOffset
     };
