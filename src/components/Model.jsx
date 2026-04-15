@@ -130,32 +130,43 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             position={nodes.Glass_Base.position}
             rotation={nodes.Glass_Base.rotation}
             scale={nodes.Glass_Base.scale}
+            renderOrder={10}
           >
-
-            <meshPhysicalMaterial
-              color="#ffffff"
-              // metalness={0.05}
-              roughness={0.0}
-              transmission={1}
-              ior={1.5}
-              thickness={0.2}
-              transparent
-              opacity={1.0}
-              side={THREE.DoubleSide}
-            // reflectivity={0.5}
-            // depthWrite={false}
-            />
-
-            {/* <MeshTransmissionMaterial
+            <MeshTransmissionMaterial
               thickness={0.5}
-              ior={1.5}
+              ior={1}
+              transmission={1}
               roughness={0.0}
-              distortion={0.0}
-              distortionScale={0.3}
-              temporalDistortion={0.5}
-              clearcoat={1}
-              color="#ffffff"
-            /> */}
+              backside={true}
+              samples={16}
+              resolution={512}
+              backsideThickness={0.1}
+
+            // transmissionSampler={true}
+            // color="#bd1212ff"
+            />
+          </mesh>
+        )}
+
+        {/* Whiskey Liquid */}
+        {(nodes.Whiskey || nodes.whiskey) && (
+          <mesh
+            geometry={(nodes.Whiskey || nodes.whiskey).geometry}
+            position={(nodes.Whiskey || nodes.whiskey).position}
+            rotation={(nodes.Whiskey || nodes.whiskey).rotation}
+            scale={(nodes.Whiskey || nodes.whiskey).scale}
+            renderOrder={1}
+          >
+            <meshPhysicalMaterial
+              color="#FF6D17"
+              ior={1.33}
+              transmission={0.8}
+              roughness={0.0}
+              metalness={0.0}
+              // transparent
+              opacity={1}
+              side={THREE.DoubleSide}
+            />
           </mesh>
         )}
 
@@ -166,28 +177,20 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             position={nodes.Glass_Main.position}
             rotation={nodes.Glass_Main.rotation}
             scale={nodes.Glass_Main.scale}
+            renderOrder={10}
           >
-            {/* <meshPhysicalMaterial
-              color="#ffffff"
-              // metalness={0.05}
+            <MeshTransmissionMaterial
+              thickness={0.4}
+              ior={1.5}
               roughness={0.0}
               transmission={1}
-              ior={1.5}
-              thickness={0.4}
-              transparent
-              opacity={1.0}
-              side={THREE.DoubleSide}
-            // reflectivity={0.5}
-            // depthWrite={false}
-            /> */}
-            <MeshTransmissionMaterial
-              thickness={0.1}
-              ior={1.5}
-              roughness={0.0}
-              // distortion={0.0}
-              // distortionScale={0.3}
-              // temporalDistortion={0.5}
-              // clearcoat={1}
+              backside={true}
+              backsideThickness={0.5}
+              samples={32}
+              resolution={1024}
+              transmissionSampler={true}
+              chromaticAberration={0.05}
+              anisotropy={0.1}
               color="#ffffff"
             />
             {texture && (
@@ -202,7 +205,7 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
                 polygonOffsetFactor={-10}
                 depthTest={true}
                 depthWrite={false}
-                renderOrder={10}
+                renderOrder={15}
               />
             )}
           </mesh>
@@ -215,17 +218,21 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             rotation={meshData.rotation}
             scale={meshData.scale}
           >
-            <meshPhysicalMaterial
-              color="#ffffff"
-              metalness={0.05}
+            <MeshTransmissionMaterial
+              thickness={1.2}
+              ior={1.5}
               roughness={0.0}
               transmission={1}
-              ior={1.5}
-              thickness={0.5}
-              transparent
-              opacity={1.0}
-              side={THREE.DoubleSide}
+              backside={true}
+              backsideThickness={0.5}
+              samples={32}
+              resolution={1024}
+              transmissionSampler={true}
+              chromaticAberration={0.05}
+              anisotropy={0.1}
+              color="#ffffff"
             />
+
             {texture && (
               <Decal
                 key={text}

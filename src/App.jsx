@@ -6,6 +6,9 @@ import CameraControls from "./components/CameraControls";
 import TextCadPanel from "./components/TextCadPanel";
 import { useProgress } from "@react-three/drei";
 import Loader from "./components/Loader";
+import Background from "./components/Background";
+import { Leva } from "leva";
+import { isDebugMode } from "./utils/debug";
 
 export default function App() {
   // ✅ GLOBAL STATE
@@ -25,8 +28,12 @@ export default function App() {
 
     return () => clearTimeout(minTime);
   }, [progress]);
+
+  const isDebug = isDebugMode();
+
   return (
     <div className="app-container" style={{ position: "relative" }}>
+      <Leva hidden={!isDebug} />
       {/* ✅ PANEL (controlled by App) */}
       <TextCadPanel
         text={text}
@@ -41,23 +48,22 @@ export default function App() {
         style={{ width: "calc(100% - 300px)", height: "100%" }}
       >
         <Canvas camera={{ position: [0, 10, 75], fov: 15 }} shadows>
-          <color attach="background" args={["#000000"]} />
-
+          <Background />
           <Lights />
 
           {/* ✅ PASS DATA TO MODEL */}
           <Model
-            url="/Grand_Canyon_Glass_02.glb"
+            url="/Whisky Glass (1).glb"
             text={text}
             fontBuffer={fontBuffer}
             onUpdateOffset={setDecalOffset}
           />
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4.5, 8]}>
             <planeGeometry args={[100, 100]} />
-            <meshBasicMaterial color="#2b2b2b" />
+            <meshBasicMaterial color="#2c2c2c" />
           </mesh>
 
-          <CameraControls />
+          <CameraControls isDebug={isDebug} />
         </Canvas>
       </div>
     </div>
