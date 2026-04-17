@@ -13,7 +13,7 @@ export default function Background() {
 
     const gradient = context.createLinearGradient(0, 0, 0, 256)
     gradient.addColorStop(0, '#000000') // Top (Black)
-    gradient.addColorStop(0.6, '#222222') // More black (60% coverage)
+    gradient.addColorStop(0.5, '#3a3a3a') // More black (60% coverage)
     gradient.addColorStop(1, '#333333') // Bottom (Dark Grey)
 
     context.fillStyle = gradient

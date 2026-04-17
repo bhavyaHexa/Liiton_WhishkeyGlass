@@ -1,14 +1,30 @@
 import { Suspense, useMemo, useEffect } from "react";
 import { useGLTF, Decal, Center, MeshTransmissionMaterial } from "@react-three/drei";
+import { useControls } from "leva";
 import * as THREE from "three";
 import * as makerjs from "makerjs";
 import opentype from "opentype.js";
 import { svgToTexture } from "../utils/svgToTexture";
+import { isDebugMode } from "../utils/debug";
 import Loader from "./Loader";
 
 function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
   const { nodes } = useGLTF(url);
   const scene = nodes.Scene || nodes;
+
+  const isDebug = isDebugMode();
+
+  // ✅ Toggle Whiskey visibility (Debug Only)
+  const { addWhiskey } = useControls(
+    "Debug",
+    {
+      addWhiskey: {
+        value: true,
+        label: "ADD whiskey",
+      },
+    },
+    { hidden: !isDebug }
+  );
 
   // ✅ Extract mesh data properly for Decal positioning
   const meshData = useMemo(() => {
@@ -132,24 +148,52 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             scale={nodes.Glass_Base.scale}
             renderOrder={10}
           >
-            <MeshTransmissionMaterial
-              thickness={0.5}
-              ior={1}
-              transmission={1}
-              roughness={0.0}
+            {/* <MeshTransmissionMaterial
+              // thickness={0.5}
+              // ior={1.5}
+              // transmission={1}
+              // roughness={0.0}
               backside={true}
-              samples={16}
-              resolution={512}
-              backsideThickness={0.1}
+              // samples={16}
+              // resolution={512}
+              // backsideThickness={0.1}
 
-            // transmissionSampler={true}
-            // color="#bd1212ff"
+              transmissionSampler={true}
+              // color="#bd1212ff"
+              reflectivity={1.0}
+            /> */}
+
+            {/* <meshPhysicalMaterial
+              thickness={1.5}
+              roughness={0.05}
+              transmission={1}
+              ior={1.5}
+              clearcoat={1}
+              clearcoatRoughness={0.1}
+              color="#ffffff"
+            /> */}
+
+            <meshPhysicalMaterial
+              color="#ffffff"
+              // metalness={0.05}
+              roughness={0.05}
+              transmission={1}
+              ior={1.5}
+              thickness={5.0}
+              transparent
+              opacity={1.0}
+              side={THREE.DoubleSide}
+              reflectivity={0.5}
+            // depthWrite={false}
             />
+
+
+
           </mesh>
         )}
 
         {/* Whiskey Liquid */}
-        {(nodes.Whiskey || nodes.whiskey) && (
+        {addWhiskey && (nodes.Whiskey || nodes.whiskey) && (
           <mesh
             geometry={(nodes.Whiskey || nodes.whiskey).geometry}
             position={(nodes.Whiskey || nodes.whiskey).position}
@@ -158,14 +202,16 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             renderOrder={1}
           >
             <meshPhysicalMaterial
-              color="#FF6D17"
-              ior={1.33}
-              transmission={0.8}
-              roughness={0.0}
-              metalness={0.0}
-              // transparent
+              thickness={1.5}
+              roughness={0.02}
+              transmission={1}
+              ior={1.36}
+              color="#ff9900"
+              attenuationColor="#ff2200"
+              attenuationDistance={1.2}
+              backside={true}
+              transparent={true}
               opacity={1}
-              side={THREE.DoubleSide}
             />
           </mesh>
         )}
@@ -180,19 +226,40 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
             renderOrder={10}
           >
             <MeshTransmissionMaterial
-              thickness={0.4}
+              thickness={0.1}
               ior={1.5}
               roughness={0.0}
-              transmission={1}
-              backside={true}
-              backsideThickness={0.5}
-              samples={32}
-              resolution={1024}
-              transmissionSampler={true}
-              chromaticAberration={0.05}
-              anisotropy={0.1}
+              // distortion={0.0}
+              // distortionScale={0.3}
+              // temporalDistortion={0.5}
+              // clearcoat={1}
               color="#ffffff"
+
+            // samples={64}
+            // resolution={1024}
+            // transmissionSampler={true}
+            // chromaticAberration={0.1}
+            // anisotropy={1.0}
+            // color="#ffffff"
             />
+
+            {/* <meshPhysicalMaterial
+
+              thickness={3.0}
+              roughnes={0.2}
+              clearcoat={0.1}
+              clearcoatRoughness={0}
+              transmission={1}
+              ior={1.5}
+              color="#ffffff"
+              reflectivity={1.0}
+              // transparent={true}
+              opacity={0.8}
+
+            /> */}
+
+
+
             {texture && (
               <Decal
                 key={text}
@@ -227,8 +294,8 @@ function GlassModel({ url, text = "Hello CAD", fontBuffer, onUpdateOffset }) {
               backsideThickness={0.5}
               samples={32}
               resolution={1024}
-              transmissionSampler={true}
-              chromaticAberration={0.05}
+              // transmissionSampler={true}
+              // chromaticAberration={0.05}
               anisotropy={0.1}
               color="#ffffff"
             />

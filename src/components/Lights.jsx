@@ -9,9 +9,9 @@ export default function Lights() {
 
   const { envEnabled, envIntensity, envRotationX, envRotationY, envRotationZ } = useControls('Debug.Environment', {
     envEnabled: { value: true, label: 'Enable Environment' },
-    envIntensity: { value: 0.4, min: 0, max: 10, step: 0.1 },
+    envIntensity: { value: 0.7, min: 0, max: 10, step: 0.1 },
     envRotationX: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-    envRotationY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
+    envRotationY: { value: -1.43, min: -Math.PI, max: Math.PI, step: 0.01 },
     envRotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
   }, { hidden: !isDebug, collapsed: true });
 
